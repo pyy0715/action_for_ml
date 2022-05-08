@@ -4,3 +4,4 @@ def abcd(x):
 
 if __name__ == "__main__":
     abcd("f")
+    abcd("d")
