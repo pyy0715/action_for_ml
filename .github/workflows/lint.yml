@@ -44,6 +44,8 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter@v4
         env:
-          VALIDATE_ALL_CODEBASE: True
+          VALIDATE_ALL_CODEBASE: False
+          VALIDATE_PYTHON_BLACK: True
+          VALIDATE_PYTHON_FLAKE8: False
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
