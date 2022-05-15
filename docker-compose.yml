@@ -1,0 +1,82 @@
+version: "3"
+
+services:
+  s3:
+    image: minio/minio
+    container_name: mlflow_s3
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_volume:/data
+    networks:
+      - internal
+      - public
+
+  db:
+    image: mysql/mysql-server:5.7.28
+    container_name: mlflow_db
+    restart: unless-stopped
+    expose:
+      - "3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db_volume:/var/lib/mysql
+    networks:
+      - internal
+
+  mlflow:
+    image: yyeon2/mlflow_tracker
+    container_name: mlflow_tracker
+    restart: unless-stopped
+    build:
+      context: ./tracker
+      dockerfile: Dockerfile
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      MLFLOW_S3_ENDPOINT_URL: http://s3:9000
+    ports:
+      - "5000:5000"
+    networks:
+      - public
+      - internal
+    entrypoint:
+      [
+        "/bin/sh",
+        "-c",
+        "./wait-for-it.sh db:3306 -t 90 && mlflow server --backend-store-uri mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE} --default-artifact-root s3://${AWS_BUCKET_NAME}/ --host 0.0.0.0"
+      ]
+
+  create_s3_buckets:
+    image: minio/mc
+    container_name: minio_client
+    depends_on:
+      - "s3"
+    entrypoint:
+      [
+        "/bin/sh",
+        "-c",
+        "/usr/bin/mc alias set minio http://s3:9000 '${AWS_ACCESS_KEY_ID}' '${AWS_SECRET_ACCESS_KEY}' && /usr/bin/mc mb minio/${AWS_BUCKET_NAME}; exit 0;"
+      ]
+    networks:
+      - internal
+
+networks:
+  internal:
+  public:
+    driver: bridge
+
+volumes:
+  db_volume:
+  minio_volume:
