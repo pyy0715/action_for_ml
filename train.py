@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+
 
 def eval_metrics(actual, pred):
     rmse = np.sqrt(mean_squared_error(actual, pred))
@@ -58,7 +60,7 @@ if __name__ == "__main__":
     alpha = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
     l1_ratio = float(sys.argv[2]) if len(sys.argv) > 2 else 0.5
 
-    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
 
     with mlflow.start_run() as run:
         lr = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=42)
