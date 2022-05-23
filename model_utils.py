@@ -1,11 +1,9 @@
 import os
-import numpy as np
-from dotenv import load_dotenv
 from typing import List
 
 import mlflow
+from dotenv import load_dotenv
 from mlflow.tracking import MlflowClient
-from mlflow.store.artifact.models_artifact_repo import ModelsArtifactRepository
 
 load_dotenv()
 
